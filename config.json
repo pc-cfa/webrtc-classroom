@@ -1,0 +1,5 @@
+{
+	"mongo_dsn": "mongodb://localhost",
+	"server_alias": "__server_alias__"
+}
+

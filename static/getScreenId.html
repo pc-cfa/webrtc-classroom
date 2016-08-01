@@ -1,0 +1,125 @@
+<!--
+    This script is a hack used to support single chrome extension usage on any domain.
+    This script has issues, though.
+    It uses "postMessage" mechanism which fails to work if someone is using it from inside an <iframe>.
+    The only solution for such cases is, use WebSockets or external servers to pass "source-ids".
+
+    Note: If you want to host it yourself:
+    1) open ScreenId.js
+    2) replace following with "getScreenId.html" link:
+
+    iframe.src = 'https://www.webrtc-experiment.com/getSourceId/'; // replace it with below line
+    iframe.src = 'https://www.yourdomain.com/getScreenId.html';
+-->
+<script>
+// https://github.com/muaz-khan/DetectRTC
+
+var screen = {
+    screenCallback: null,
+    sourceId: 0,
+    chromeMediaSource: 'screen',
+    
+    getSourceId: function (callback) {
+        screenCallback = callback;
+
+        console.log("window.postMessage('get-sourceId', '*');");
+        window.postMessage('get-sourceId', '*');
+    },
+    onMessageCallback: function (data) {
+        console.log("onMessageCallback: function (data)", data);
+
+        // "cancel" button is clicked
+        if (data == 'PermissionDeniedError') {
+            DetectRTC.screen.chromeMediaSource = 'PermissionDeniedError';
+            if (screenCallback) return screenCallback('PermissionDeniedError');
+            else throw new Error('PermissionDeniedError');
+        }
+
+        // extension notified his presence
+        if (data == 'rtcmulticonnection-extension-loaded') {
+            DetectRTC.screen.chromeMediaSource = 'desktop';
+        }
+
+        if (data.captureSourceId) {
+            DetectRTC.screen.chromeMediaSource = 'desktop';
+            
+            console.log("DetectRTC.screen.chromeMediaSource = 'desktop'");
+        }
+
+        // extension shared temp sourceId
+        if (data.sourceId) {
+            DetectRTC.screen.sourceId = data.sourceId;
+            if (screenCallback) screenCallback(DetectRTC.screen.sourceId);
+        }
+
+        if (data == 'get-sourceId') {
+            var a = 1;
+            //DetectRTC.screen.sourceId = data.get-sourceId;
+            // if (screenCallback) screenCallback(DetectRTC.screen.get-sourceId);
+        }
+    },
+    getChromeExtensionStatus: function (callback) {
+        // https://chrome.google.com/webstore/detail/screen-capturing/ajhifddimkapgcifgcodmmfdlknahffk
+        var extensionid = 'ajhifddimkapgcifgcodmmfdlknahffk';
+      //var extensionid = 'lipcleldieblfcloenndgbdlpnjklccm';
+
+        var image = document.createElement('img');
+        image.src = 'chrome-extension://' + extensionid + '/icon.png';
+        
+        image.onload = function () {
+           
+          //DetectRTC.screen.chromeMediaSource = 'screen';
+          //console.log("image.onload() DetectRTC.screen.chromeMediaSource = 'screen'");
+            
+            window.postMessage('are-you-there', '*');
+            
+            setTimeout(function () {
+
+                if (DetectRTC.screen.chromeMediaSource == 'screen') {
+                    console.log("callback('installed-disabled');");
+                    callback('installed-disabled');
+                } 
+                else {
+                    console.log("callback('installed-enabled');");
+                    callback('installed-enabled');
+                }
+
+            }, 2000);
+
+        };
+
+        image.onerror = function () {
+            callback('not-installed');
+        };
+    }
+};
+
+const DetectRTC = { screen: screen };
+
+//DetectRTC.screen = screen;
+
+window.addEventListener('message', function (event) {
+    
+    console.log("window.addEventListener('message', function (event)", event);
+
+    if (!event.data || !(typeof event.data == 'string' || event.data.sourceId || event.data.captureSourceId)) return;
+
+    if (event.data.captureSourceId) captureSourceId();
+
+    DetectRTC.screen.onMessageCallback(event.data);
+});
+
+function captureSourceId() {
+    // check if desktop-capture extension installed.
+    DetectRTC.screen.getChromeExtensionStatus(function (status) {
+        if (status != 'installed-enabled') {
+            window.parent.postMessage({ chromeExtensionStatus: status }, '*');
+            return;
+        }
+
+        DetectRTC.screen.getSourceId(function (sourceId) {
+            window.parent.postMessage({ chromeMediaSourceId: sourceId }, '*');
+        });
+    });
+}
+</script>

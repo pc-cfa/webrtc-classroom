@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="cache-control" content="no-cache">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="shortcut icon" href="favicon.png" type="image/png" />
+
+  <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="bower_components/demo-console/index.css">
+  <link rel="stylesheet" href="bower_components/ekko-lightbox/dist/ekko-lightbox.min.css">
+  <link rel="stylesheet" href="css/kurento.css">
+
+  <script src="bower_components/adapter.js/adapter.js"></script>
+  <script src="bower_components/jquery/dist/jquery.min.js"></script>
+  <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="bower_components/demo-console/index.js"></script>
+  <script src="bower_components/ekko-lightbox/dist/ekko-lightbox.min.js"></script>
+
+  <script src="bower_components/kurento-utils/js/kurento-utils.js"></script>
+
+  <script src="js/bootstrap-treeview.js"></script>
+
+  <script src="js/getScreenId.js"></script>
+  <script src="js/index.js"></script>
+
+  <title>Luddite Enterprises: WebRTC Classrooms</title>
+</head>
+
+<body>
+
+  <header>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse"></button>
+          <a class="navbar-brand" href=".">WebRTC Classroom</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="page-header">
+      <h2 style="display:none">WebRTC Classroom </h2>
+      <div class="instructions" style="display:none">
+        <ol>
+          <li>Open this page with a browser compliant with WebRTC (Chrome, Firefox).</li>
+          <li>If you would like to be a <i>viewer</i>, click on <i>Viewer</i> button. Selection the options you would like to view and click <i>Start</i></li>
+          <li>If you would like to be the <i>Presenter</i>, click on <i>Presenter</i> button. Selection the options you would like to present click <i>Start</i></li>
+          <li>Grant the access to the camera and microphone or screen. After the SDP negotiation the communication should start.</li>
+          <li>Click on <i>Stop</i> to finish the communication. When <i>Presenter</i> clicks on <i>Stop</i>, the rest of <i>Viewers</i> (if any) ends the communication too.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="row">
+
+        <div class="col-sm-11">
+
+          <div class="panel-group" style="margin: 2px; border-style: solid; border-width: 1px;  border-radius: 5px; border-color: black;">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h6 class="panel-title">
+                  <a data-toggle="collapse" href="#collapse1">Collapse</a>
+                </h6>
+              </div>
+              <div id="collapse1" class="panel-collapse collapse">
+                <!--<div class="panel-body">Panel Body</div>-->
+
+                <form class="form-horizontal" role="form">
+                  <div class="call_options" style="margin: 2px; border-style: solid; border-width: 1px;  border-radius: 5px; border-color: black;">
+                    <div class="form-group">
+                      <div class="col-sm-1">
+                        <a id="toggle_call_panel" href="#" class="btn" onclick="toggleCallPanel(); return false;">
+                          <span class="glyphicon glyphicon-collapse-up"></span>Collapse</a>
+                      </div>
+                      <label class="col-sm-2 control-label">Mode</label>
+                      <div class="col-sm-8">
+                        <label class="radio-inline"> <input type="radio" name="mode_selection" value="viewer" onclick="getsetOptions()" checked > Viewer </label>
+                        <label class="radio-inline"> <input type="radio" name="mode_selection" value="presenter" onclick="getsetOptions()"> Presenter </label>
+                      </div>
+                    </div>
+
+                    <div class="viewer_options">
+                      <div class="form-group">
+                        <label class="col-sm-3 control-label">Presentation</label>
+                        <div class="col-sm-8">
+
+                          <label>
+                              <select id="presentation_selection" name="presentation_selection">
+                                <option value="">Please select a presentation</option>
+                              </select>
+                            </label>
+
+                        </div>
+                      </div>
+
+                      <div class="replay_options">
+
+                        <div class="form-group">
+                          <label class="col-sm-3 control-label">Replay Processing</label>
+                          <div class="col-sm-8">
+                            <label class="radio-inline"> <input type="radio" name="replay_processing" value="none" checked> None </label>
+                            <label class="radio-inline"> <input type="radio" name="replay_processing" value="faceoverlay"> FaceOverlay </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="presenter_options" style="display:none">
+                      <div class="form-group">
+                        <label class="col-sm-3 control-label">Presenter</label>
+                        <div class="col-sm-8">
+                          <label><input type="text" name="presenter" value="Default"></label>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="col-sm-3 control-label">Presentation</label>
+                        <div class="col-sm-8">
+                          <label><input type="text" name="presentation" value="Presentation"></label>
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label class="col-sm-3 control-label">Capture</label>
+                        <div class="col-sm-8">
+                          <label class="radio-inline"> <input type="radio" name="capture_selection" value="webcam" checked> Webcam </label>
+                          <label class="radio-inline"> <input type="radio" name="capture_selection" value="screen"> Screen </label>
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label class="col-sm-3 control-label">Capture Options</label>
+                        <div class="col-sm-8">
+                          <label class="check-inline"> <input type="checkbox" id="audio" value="audio" checked> Audio </label>
+                          <label class="check-inline"> <input type="checkbox" id="video" value="video" checked> Video </label>
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label class="col-sm-3 control-label">Recording Options</label>
+                        <div class="col-sm-8">
+                          <label class="radio-inline"> <input type="radio" name="recording_selection" value="none" > None </label>
+                          <label class="radio-inline"> <input type="radio" name="recording_selection" value="webm" checked> WebM </label>
+                          <label class="radio-inline"> <input type="radio" name="recording_selection" value="mpeg4"> MPEG4 </label>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    </div>
+
+                  <div class="form-group">
+                    <label class="col-sm-3 control-label">CALL</label>
+                    <div class="col-sm-8">
+                      <a id="call" href="#" class="btn btn-success" onclick="startCall(); return false;">
+                        <span class="glyphicon glyphicon-play"></span> Start</a>
+
+                      <a id="stop" href="#" class="btn btn-info" onclick="stopCall(); return false;">
+                        <span class="glyphicon glyphicon-stop"></span> Stop</a>
+
+                      <a id="recording_indicator" href="#" class="btn btn-danger" onclick="return false;" style="display:none">
+                        <span class="glyphicon glyphicon-record"></span></a>
+
+                    </div>   
+
+                  </div>
+                </form><!--class="form-horizontal" role="form">-->
+
+              </div>
+            </div>
+          </div>
+
+
+
+
+
+          <div class="row">
+            <div class="col-sm-3" style="margin: 2px; border-style: solid; border-width: 1px;  border-radius: 5px; border-color: black;">
+              <!--bootstrap-tree-->
+              <div id="participants"></div>
+            </div>
+            <div class="col-sm-8" style="margin: 2px; border-style: solid; border-width: 1px;  border-radius: 5px; border-color: black;">
+              <div class="row">
+                <div id="video_player_size_controls">
+                  <a id="extra_small_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(320, 240); return false;">
+                    <span class="glyphicon glyphicon-picture"></span> XS</a>
+
+                  <a id="small_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(480, 320); return false;">
+                    <span class="glyphicon glyphicon-picture"></span> S</a>
+
+                  <a id="medium_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(640, 480); return false;">
+                    <span class="glyphicon glyphicon-picture"></span> M</a>
+
+                  <a id="large_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(1024, 768); return false;">
+                    <span class="glyphicon glyphicon-picture"></span> L</a>
+
+                  <a id="hd_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(1280, 1024); return false;">
+                    <span class="glyphicon glyphicon-picture"></span> HD</a>
+
+                  <a id="fhd_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(1920, 1080); return false;">
+                    <span class="glyphicon glyphicon-picture"></span> FHD</a>
+                </div>
+              </div><!--row-->
+
+              <div class="row">
+                <video id="video_player_1" autoplay controls width="640px" height="480px" poster="img/webrtc.png" style="border-style: none; ></video>
+              </div><!--row-->
+
+              <div class="row">
+                <div id="seek_controls" style="display:none">
+                  <a id="pause" href="#" class="btn btn-warning" onclick="togglePause(); return false;">
+                    <span class="glyphicon glyphicon-pause"></span> Pause</a>
+
+                  <a id="seek_minus_eighteen_hundred" href="#" class="btn btn-warning" onclick="seekStream(-1800000); return false;">
+                    <span class="glyphicon glyphicon-step-backward"></span>-30m</a>
+
+                  <a id="seek_minus_six_hundred" href="#" class="btn btn-warning" onclick="seekStream(-600000); return false;">
+                    <span class="glyphicon glyphicon-step-backward"></span>-10m</a>
+
+                  <a id="seek_minus_sixty" href="#" class="btn btn-warning" onclick="seekStream(-60000); return false;">
+                    <span class="glyphicon glyphicon-step-backward"></span>-1m</a>
+
+                  <a id="seek_minus_six" href="#" class="btn btn-warning" onclick="seekStream(-6000); return false;">
+                    <span class="glyphicon glyphicon-step-backward"></span>-6s</a>
+
+                  <a id="seek_plus_six" href="#" class="btn btn-warning" onclick="seekStream(6000); return false;">
+                    <span class="glyphicon glyphicon-step-forward"></span>+6s</a>
+
+                  <a id="seek_plus_sixty" href="#" class="btn btn-warning" onclick="seekStream(60000); return false;">
+                    <span class="glyphicon glyphicon-step-forward"></span>+1m</a>
+
+                  <a id="seek_plus_six_hundred" href="#" class="btn btn-warning" onclick="seekStream(600000); return false;">
+                    <span class="glyphicon glyphicon-step-forward"></span>+10m</a>
+
+                  <a id="seek_plus_eighteen_hundred" href="#" class="btn btn-warning" onclick="seekStream(1800000); return false;">
+                    <span class="glyphicon glyphicon-step-forward"></span>+30m</a>
+                </div>
+              </div><!--row-->
+
+            </div>
+          </div><!--row-->
+
+          <div class="row">
+            <div class="col-sm-11" style="margin: 2px; border-style: solid; border-width: 1px;  border-radius: 5px; border-color: black;">
+              <label class="control-label" for="console">Console</label><br/><br/>
+              <div id="console" class="democonsole">
+                <ul></ul>
+              </div>
+            </div><!--col-md-12-->
+          </div><!--row-->
+
+        </div><!--col-md-12-->
+
+    </div><!--row-->
+
+  </div><!--container-->
+
+  <footer>
+    <div class="foot-fixed-bottom">
+      <div class="container text-center">
+        <hr/>
+        <div class="row">
+          <div class="col-sm-4">
+          </div>
+          <div class="col-sm-4">
+            <div class="row">&copy; 2016-2016 Luddite Enterprises</div>
+            <a href="http://www.ludditeenterprise.com">
+              <img src="img/luddite_enterprises_logo.png" alt="Luddite Enterprises" height="50px" />
+            </a>
+          </div>
+          <div class="col-sm-4">
+            <div class="row">Powered by Kurento</div>
+            <a href="http://www.kurento.org">
+              <img src="img/kurento.png" alt="Kurento" height="50px" />
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+
+</html>
