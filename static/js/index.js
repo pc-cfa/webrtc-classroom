@@ -658,6 +658,9 @@ function processSessionInfoArray(parsedMessage)
 
         /////////////////////////////////////
         // who is watching them ?
+        var live_viewers = [];
+        var recording_viewers = [];
+
         for (var v = 0; v < sessionInfoArray.length; v++) {
           var sessionInfo2 = sessionInfoArray[v];
 
@@ -670,16 +673,19 @@ function processSessionInfoArray(parsedMessage)
                   (sessionInfo2.call_options.capture_selection == sessionInfo.call_options.capture_selection)) {
 
                   if (sessionInfo2.call_options.replay_selection == "live") {
-                    live_child.nodes.push({ text: sessionInfo2.logged_in_user } );
+                    live_viewers.push({ text: sessionInfo2.logged_in_user } );
                   }
                   else if (sessionInfo2.call_options.replay_selection == "recording") {
-                    recording_child.nodes.push({ text: sessionInfo2.logged_in_user } );
+                    recording_viewers.push({ text: sessionInfo2.logged_in_user } );
                   }
               }
 
             } // if (sessionInfo2.call_options.mode_selection == "viewer") 
           } // if (sessionInfo2.call_options) {
         } // for (var v = 0; v < sessionInfoArray.length; v++)
+
+        live_child.nodes = live_viewers.sort(function(a,b) { return (a.text > b.text) ? 1 : ((b.text > a.text) ? -1 : 0); } ); 
+        recording_child.nodes = recording_viewers.sort(function(a,b) { return (a.text > b.text) ? 1 : ((b.text > a.text) ? -1 : 0); } );
 
       } // if (sessionInfo.call_options.mode_selection == "presenter") 
     } // if (sessionInfo.call_options) 
