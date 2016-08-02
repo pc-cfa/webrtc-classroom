@@ -599,14 +599,11 @@ function processSessionInfoArray(parsedMessage)
   /////////////////////////////////////
   // phase 1 build the list of participants
 
+  // base tree data structure
   var tree_data = [
     {
-      text: "SESSIONS",
-        nodes: [
-          {
-            text: "session1",
-          }
-        ]
+      text: "SESSIONS", 
+        nodes: []
     },
     {
       text: "PRESENTATIONS",
@@ -619,28 +616,50 @@ function processSessionInfoArray(parsedMessage)
   ];
 
   /////////////////////////////////////
+  tree_data[0].nodes.push( { text: 'session1' } );
+
+  var participants = [];
+
   for (var i = 0; i < sessionInfoArray.length; i++) {
     var sessionInfo = sessionInfoArray[i];
 
-    // everyone is a particpant regardless
+    // everyone is a particpant
     if (sessionInfo.logged_in_user != null) {
-      tree_data[2].nodes.push( { text: sessionInfo.logged_in_user } );
+      var participant = { text: sessionInfo.logged_in_user };
+      
+      var bFound = false;
+      
+      for(var p = 0; (!bFound) && (p < participants.length); p++) {
+          if (participants[p].text == participant.text) {
+              bFound = true;
+          }
+      }      
+      
+      if (!bFound) {
+        participants.push(participant);
+      }
     }
 
     // are they presenting
     if (sessionInfo.call_options) {
       if (sessionInfo.call_options.mode_selection == "presenter") {
 
-        var text = sessionInfo.call_options.presentation + " by " + sessionInfo.call_options.presenter + " " + sessionInfo.call_options.capture_selection; 
+        var child_text = sessionInfo.call_options.presentation + " by " + sessionInfo.call_options.presenter + " - " + sessionInfo.call_options.capture_selection; 
 
-        var child = { text: text + " (live)", nodes: [] };
+        var live_child      = { text: child_text + " (live)", nodes: [] };
+        var recording_child = { text: child_text + " (recording)", nodes: [] };
 
-        tree_data[1].nodes.push(child);
+        tree_data[1].nodes.push(live_child);
+
+        if (sessionInfoArray[i].call_options.recording_selection != "none")
+        {
+          tree_data[1].nodes.push(recording_child);
+        }
 
         /////////////////////////////////////
-        // who is watching
-        for (var ii = 0; ii < sessionInfoArray.length; ii++) {
-          var sessionInfo2 = sessionInfoArray[ii];
+        // who is watching them ?
+        for (var v = 0; v < sessionInfoArray.length; v++) {
+          var sessionInfo2 = sessionInfoArray[v];
 
           // are they viewing
           if (sessionInfo2.call_options) {
@@ -648,26 +667,25 @@ function processSessionInfoArray(parsedMessage)
               // Are they watching this ?
               if ((sessionInfo2.call_options.presentation == sessionInfo.call_options.presentation) &&
                   (sessionInfo2.call_options.presenter == sessionInfo.call_options.presenter) &&
-                  (sessionInfo2.call_options.capture_selection == sessionInfo.call_options.capture_selection) &&
-                  (sessionInfo2.call_options.recording_selection == "live")) {
-                    child.nodes.push({ text: sessionInfo2.logged_in_user } );
+                  (sessionInfo2.call_options.capture_selection == sessionInfo.call_options.capture_selection)) {
+
+                  if (sessionInfo2.call_options.replay_selection == "live") {
+                    live_child.nodes.push({ text: sessionInfo2.logged_in_user } );
                   }
-            }
-          }
-        }
-        /////////////////////////////////////
+                  else if (sessionInfo2.call_options.replay_selection == "recording") {
+                    recording_child.nodes.push({ text: sessionInfo2.logged_in_user } );
+                  }
+              }
 
-        if (sessionInfoArray[i].call_options.recording_selection != "none")
-        {
-          var child = { text: text + " (recording)" };
+            } // if (sessionInfo2.call_options.mode_selection == "viewer") 
+          } // if (sessionInfo2.call_options) {
+        } // for (var v = 0; v < sessionInfoArray.length; v++)
 
-          tree_data[1].nodes.push(child);
-        }
+      } // if (sessionInfo.call_options.mode_selection == "presenter") 
+    } // if (sessionInfo.call_options) 
+  } // for (var i = 0; i < sessionInfoArray.length; i++) 
 
-      }
-    }
-  }
-
+  tree_data[2].nodes = participants.sort(function(a,b) { return (a.text > b.text) ? 1 : ((b.text > a.text) ? -1 : 0); } ); 
 
   /////////////////////////////////////
   $('#participants').treeview({data: tree_data});
