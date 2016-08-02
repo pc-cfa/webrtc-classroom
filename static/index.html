@@ -81,11 +81,15 @@
                 <div class="row">
                   <label class="col-sm-3 control-label">Username</label>
                     <div class="col-sm-3">
-                      <label><input type="text" id="logged_in_user" name="presenter" value=""></label>
+                      <label><input type="text" id="logged_in_user" name="presenter" value="" style="width: 240px"></label>
                     </div>
                     <div class="col-sm-1">
                       <a id="login" href="#" class="btn btn-primary" onclick="loginUser(); return false;">
                         <span class="glyphicon glyphicon-log-in"></span> Login</a>
+                    </div>
+                    <div class="col-sm-1">
+                      <a id="logout" href="#" class="btn btn-primary" onclick="logoutUser(); return false;">
+                        <span class="glyphicon glyphicon-log-out"></span> Logout</a>
                     </div>
                   </div>
                 </div><!--row-->
@@ -102,11 +106,15 @@
 
                 <div class="row">
                   <div class="viewer_options">
-                    <label class="col-sm-3 control-label">Presentation</label>
+                    <label class="col-sm-3 control-label">Select</label>
                     <div class="col-sm-8">
                       <label>
-                        <select id="presentation_selection" name="presentation_selection">
-                          <option value="">Please select a presentation</option>
+                        <select id="presentation_selection" name="presentation_selection" style="width: 240px">
+                          <option value=""> a presentation</option> 
+                        </select>
+                        or
+                        <select id="file_selection" name="file_selection" style="width: 240px">
+                          <option value=""> a file</option> 
                         </select>
                       </label>
                     </div>

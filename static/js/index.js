@@ -23,6 +23,8 @@ var sessionInfoArray = []; // all the clients currently connected to the server
 
 var logged_in_user   = ""; // TEMP 
 
+var fileInfoArray = [];
+
 ///////////////////////////////////////////////////////////////////////////////
 function setOptions(call_options)
 {
@@ -81,6 +83,18 @@ function getOptions()
       call_options.presentation          = sessionInfo.call_options.presentation;
       call_options.capture_selection     = sessionInfo.call_options.capture_selection;
       call_options.replay_selection      = sessionInfo.call_options.replay_selection;
+    }
+    else {
+      var data = $('#file_selection').val();
+      
+      if (data) {
+        var sessionInfo = JSON.parse(data);
+
+        call_options.presenter             = sessionInfo.call_options.presenter;
+        call_options.presentation          = sessionInfo.call_options.presentation;
+        call_options.capture_selection     = sessionInfo.call_options.capture_selection;
+        call_options.replay_selection      = sessionInfo.call_options.replay_selection;
+      }      
     }
 
     call_options.replay_processing       = $('input[name=replay_processing]:checked').val();
@@ -157,6 +171,10 @@ ws.onmessage = function(message) {
       processSessionInfoArray(parsedMessage.sessionInfoArray);
       break;
 
+    case 'fileInfoArray':
+      processFileInfoArray(parsedMessage.fileInfoArray);
+      break;
+
     case 'recordingStateChange':
       processRecordingStateChange(parsedMessage.state);
       break;
@@ -204,7 +222,7 @@ function startCall() {
   if (call_options.mode_selection == "viewer") {
 
       if ((call_options.presenter == "") || (call_options.presentation == "") || (call_options.replay_selection == "")) {
-        alert("Please select a presentation !");
+        alert("Please select a presentation or file !");
         return;
       }
 
@@ -597,7 +615,7 @@ function processSessionInfoArray(parsedMessage)
   sessionInfoArray = parsedMessage;
 
   /////////////////////////////////////
-  // phase 1 build the list of participants
+  // phase 1 build the lists of participants, presenters and viewers
 
   // base tree data structure
   var tree_data = [
@@ -707,7 +725,7 @@ function processSessionInfoArray(parsedMessage)
       select.removeChild(select.firstChild);
   }
 
-  select.options.add(new Option("Please select a presentation", ""));
+  select.options.add(new Option("a presentation", ""));
 
   for (var i = 0; i < sessionInfoArray.length; i++) {
     var sessionInfo = sessionInfoArray[i];
@@ -733,6 +751,48 @@ function processSessionInfoArray(parsedMessage)
         }
       }
     }
+  }
+
+  // TODO reselect current selection if we had one
+}
+
+///////////////////////////////////////////////////////////////////////////////
+function processFileInfoArray(parsedMessage)
+{
+  //console.log(parsedMessage);
+
+  fileInfoArray = parsedMessage;
+
+  /////////////////////////////////////
+  // phase 1 build the list of available files
+  var select = $('#file_selection')[0];
+  
+  // TODO retrieve current selection
+  // TODO alert( select.options[ select.selectedIndex ].value )
+
+  while (select.firstChild) {
+      select.removeChild(select.firstChild);
+  }
+
+  select.options.add(new Option(' a file', ''));
+
+  for (var i = 0; i < fileInfoArray.length; i++) {
+    var fileInfo = fileInfoArray[i];
+
+    var text         = fileInfo.file;
+    var call_options = { presentation: '', presenter: '', capture_selection: '', replay_selectiom: '' };
+
+    call_options.presentation      = fileInfo.dir + fileInfo.file;
+    call_options.presenter         = 'TODO as required';
+    call_options.capture_selection = 'TODO as required'; 
+
+    call_options.replay_selection  = 'recorded';
+
+    var sessionInfo = { call_options: call_options };
+
+    var data = JSON.stringify(sessionInfo);
+
+    select.options.add(new Option(text, data));
   }
 
   // TODO reselect current selection if we had one

@@ -73,6 +73,8 @@ var sessions  = [];
 
 var noPresenterMessage = 'Could not find requested presenter...';
 
+var fileInfoArray = [];
+
 ///////////////////////////////////////////////////////////////////////////////
 //  Server and SocketServer startup
 ///////////////////////////////////////////////////////////////////////////////
@@ -81,6 +83,8 @@ var port  = asUrl.port;
 
 var server = https.createServer(options, app).listen(port, function() {
   console.log('Open ' + url.format(asUrl) + ' with a WebRTC capable browser');
+
+  scanForRecordedFiles("/tmp");
 });
 
 app.use(express.static(path.join(__dirname, 'static')));
@@ -142,6 +146,77 @@ function publishSessionInfoArray()
   var message = { id: 'sessionInfoArray', sessionInfoArray: sessionInfoArray };
 
   broadcastMessage(message);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+function sendRecordedFiles(ws)
+{
+  var message = { id: 'fileInfoArray', fileInfoArray: fileInfoArray };
+
+  sendMessage(ws, message);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+function publishRecordedFiles()
+{
+  var message = { id: 'fileInfoArray', fileInfoArray: fileInfoArray };
+
+  broadcastMessage(message);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+function scanForRecordedFiles(startingDirectory)
+{
+  fileInfoArray = []; //reset global
+
+  walkSync(startingDirectory, ['.webm', '.mp4', '.mp3'], fileInfoArray);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// List all files in a directory in Node.js recursively in a synchronous fashion
+function walkSync(dir, extensions, filelist) {
+
+  if (dir[dir.length-1] != '/') { dir = dir.concat('/'); }
+
+  filelist = filelist || [];
+
+  files = fs.readdirSync(dir);
+  
+  files.forEach(function(file) {
+    try {
+      if (fs.statSync(dir + file).isDirectory()) {
+        filelist = walkSync(dir + file + '/', extensions, filelist);
+      }
+      else {
+        var bMatched = false;
+        
+        for (var i = 0; (!bMatched) && (i < extensions.length); i++)
+        {
+          if (file.length >= extensions[i].length) {
+            var file_ext = file.substr(file.length - extensions[i].length, extensions[i].length).toLowerCase(); 
+
+            if (file_ext == extensions[i]) {
+              filelist.push({ dir: dir, file: file });
+              bMatched = true;
+            }
+          }
+        }  
+      }
+    }
+    catch (e) {
+      if (e.code === 'ENOENT') {
+        //console.log('File not found!');
+      } 
+      else if (e.code === 'EACCES') {
+        //console.log('File not acessible!');
+      } 
+      else {
+        throw e;
+      }      
+    }
+  });
+
+  return filelist;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -296,6 +371,9 @@ web_socket_server.on('connection', function(ws) {
   publishSessionInfoArray();
   /////////////////////////////////////
 
+  sendRecordedFiles(ws);
+  /////////////////////////////////////
+
   ws.on('error', function(error) {
     console.log('Connection ' + sessionId + ' error');
     stopCall(sessionId);
@@ -431,7 +509,13 @@ function startCall(sessionId, ws, message) {
       });
     }
     else if (message.call_options.replay_selection == "recorded") {
-      // TODO PC 290716
+      startRecordingViewer(sessionId, ws, message.call_options, message.sdpOffer, function(error, sdpAnswer) {
+        if (error) {
+          return sendMessage(ws, { id: 'start_call_answer', response: 'rejected', message: error });
+        }
+        
+        sendMessage(ws, { id: 'start_call_answer', response: 'accepted', sdpAnswer: sdpAnswer });
+      });
     }
     else {
       // Why are we here ??? Unknown call_options.replay_selection 
@@ -908,17 +992,27 @@ function startRecordingViewer(sessionId, ws, call_options, sdpOffer, callback) {
   session.call_options = call_options;
   /////////////////////////////////////
 
-  var presenterId = findPresenterSessionId(call_options);
+  var uri     = null;
+  var profile = null;
 
-  if (presenterId != null) {
-    session.presenterId = presenterId;
+  if (session.call_options.replay_selection == "recording") {
+    var presenterId = findPresenterSessionId(call_options);
+
+    if (presenterId != null) {
+      session.presenterId = presenterId;
+    }
+    else {
+      if (handleStandardPipelineError(session, noPresenterMessage, callback)) { return; }
+    }   
+
+    uri = sessions[presenterId].recordParams.uri;
+  }
+  else if (session.call_options.replay_selection == "recorded") {
+    uri = 'file://' + session.call_options.presentation;
   }
   else {
-    if (handleStandardPipelineError(session, noPresenterMessage, callback)) { return; }
-  }   
-
-  var uri     = sessions[presenterId].recordParams.uri;
-  var profile = null;
+    // Why are we here ???
+  }
 
   var replay_params = { uri: uri, mediaProfile: profile }; 
 
