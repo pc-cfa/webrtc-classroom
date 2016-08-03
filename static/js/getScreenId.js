@@ -5,6 +5,7 @@
 // Muaz Khan         - www.MuazKhan.com
 // MIT License       - www.WebRTC-Experiment.com/licence
 // Documentation     - https://github.com/muaz-khan/getScreenId.
+// Extension         - https://chrome.google.com/webstore/detail/screen-capturing/ajhifddimkapgcifgcodmmfdlknahffk 
 
 // ______________
 // getScreenId.js
