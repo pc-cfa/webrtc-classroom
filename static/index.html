@@ -116,6 +116,8 @@
                         <select id="file_selection" name="file_selection" style="width: 240px">
                           <option value=""> a file</option> 
                         </select>
+                        <a id="refresh_file_list" href="#" class="btn btn-primary" onclick="scanFileInfoArray(); return false;">
+                          <span class="glyphicon glyphicon-refresh"></span> Refresh List</a>
                       </label>
                     </div>
 
@@ -273,6 +275,8 @@
 
                     <a id="seek_plus_eighteen_hundred" href="#" class="btn btn-warning" onclick="seekStream(1800000); return false;">
                       <span class="glyphicon glyphicon-step-forward"></span>+30m</a>
+                    <label id="position" style="border-style: solid; padding: 2px; border-width: 1px;  border-radius: 5px; border-color: black;">--:--:--</label>  
+                    <label id="duration" style="border-style: solid; padding: 2px; border-width: 1px;  border-radius: 5px; border-color: black;">--:--:--</label>  
                   </div>
                 </div><!--row--><!--END SEEK CONTROLS-->
 

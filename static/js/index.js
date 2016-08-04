@@ -184,9 +184,13 @@ ws.onmessage = function(message) {
       break;
 
     case 'seekStreamResponse':
-      // TODO
+      // TODO as required
       break;
 
+    case 'streamInfo':
+      processStreamInfo(parsedMessage);
+      break;
+      
     default:
       console.error('Unrecognized message', parsedMessage);
 
@@ -410,7 +414,7 @@ function startCall() {
 
     $("#collapse-call-section-icon").attr('style', 'color: green');
 
-  } //f (!webRtcPeer) 
+  } // if (!webRtcPeer) 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -475,6 +479,9 @@ function disposeWebRtcPeer() {
 
   $('#recording_indicator').hide();
   $('#seek_controls').hide();
+
+  $('#position').val('--:--:--');
+  $('#duration').val('--:--:--');
   
   if (webRtcPeer) {
     webRtcPeer.dispose();
@@ -517,6 +524,16 @@ function loginUser() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// TEMP
+function logoutUser() {
+  $("#logged_in_user").val('');
+
+  var message = { id: 'userLogout' };
+
+  sendMessage(message);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 function onUserMessageKeyEvent(event)
 {
   if (event.keyCode == 13) {
@@ -526,6 +543,14 @@ function onUserMessageKeyEvent(event)
     
     return false;
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+function scanFileInfoArray() {
+
+  var message = { id: 'scanFileInfoArray' };
+
+  sendMessage(message);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -761,7 +786,12 @@ function processFileInfoArray(parsedMessage)
 {
   //console.log(parsedMessage);
 
-  fileInfoArray = parsedMessage;
+  fileInfoArray = parsedMessage.sort(function(a,b) {
+     var asort = a.file.toLowerCase();
+     var bsort = b.file.toLowerCase();
+     
+     return (asort > bsort) ? 1 : ((bsort > asort) ? -1 : 0); 
+    });
 
   /////////////////////////////////////
   // phase 1 build the list of available files
@@ -809,6 +839,36 @@ function processRecordingStateChange(state) {
     $('#recording_indicator').hide(); 
     $("#collapse-call-section-icon").attr('style', 'color:');
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+function processStreamInfo(parsedMessage) {
+
+  console.log('position    ' + parsedMessage.position + ' ' + SecondsToHHMMSS((parsedMessage.position/1000))); 
+  console.log('duration    ' + parsedMessage.duration + ' ' + SecondsToHHMMSS((parsedMessage.duration/1000))); 
+  console.log('isSeekable  ' + parsedMessage.isSeekable); 
+  console.log('seekableInit' + parsedMessage.seekableInit); 
+  console.log('seekableEnd ' + parsedMessage.seekableEnd);
+ 
+  var position = SecondsToHHMMSS((parsedMessage.position/1000));
+  var duration = SecondsToHHMMSS((parsedMessage.duration/1000));
+
+  $('#position').text(position);
+  $('#duration').text(duration);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+function SecondsToHHMMSS(totalSeconds) {
+  var hours   = Math.floor(totalSeconds / 3600);
+  var minutes = Math.floor((totalSeconds - (hours * 3600)) / 60);
+  var seconds = totalSeconds - (hours * 3600) - (minutes * 60);
+      seconds = Math.floor(seconds);
+
+  var result = (hours < 10 ? "0" + hours : hours);
+      result += ":" + (minutes < 10 ? "0" + minutes : minutes);
+      result += ":" + (seconds < 10 ? "0" + seconds : seconds);
+
+    return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

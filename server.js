@@ -73,7 +73,13 @@ var sessions  = [];
 
 var noPresenterMessage = 'Could not find requested presenter...';
 
-var fileInfoArray = [];
+var startingDirectories = ['/tmp', '/home/peter/Videos'];
+var fileExtensions      = ['.webm', '.mp4', '.mp3', '.mov', '.avi', '.mkv'];
+var fileInfoArray       = [];
+
+var heartbeatTimerId    = null;
+var heartbeatId         = 0;
+var heartbeatFunctions  = [];
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Server and SocketServer startup
@@ -84,7 +90,9 @@ var port  = asUrl.port;
 var server = https.createServer(options, app).listen(port, function() {
   console.log('Open ' + url.format(asUrl) + ' with a WebRTC capable browser');
 
-  scanForRecordedFiles("/tmp");
+  scanFileInfoArray();
+
+  startHeartbeatTimer();
 });
 
 app.use(express.static(path.join(__dirname, 'static')));
@@ -94,6 +102,64 @@ var web_socket_server = new ws.Server({
   server: server,
   path: '/classroom'
 });
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// heartbeat timer helper functions
+function startHeartbeatTimer() {
+  
+  heartbeatTimerId = setInterval(function() { 
+    //console.log("Heartbeat timer event");
+
+    for (var i = 0; i < heartbeatFunctions.length; i++)
+    {
+       var hbf = heartbeatFunctions[i];
+
+       hbf.fn.apply(hbf.context, hbf.params);
+    }
+
+  }, 1000); //ms
+}
+
+///////////////////////////////////////////////////////////////////////////////
+function stopHeartbeatTimer() {
+  clearInterval(heartbeatTimerId);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+function registerWithHeartbeatTimer(fn, context, params) {
+
+  heartbeatId++;
+
+  var hbf = { id: heartbeatId, fn: fn, context: context, params: params };
+
+  heartbeatFunctions.push(hbf);
+
+  console.log("registerWithHeartbeatTimer - heartbeatFunctions[] active = " + heartbeatFunctions.length)
+
+  return heartbeatId;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+function deregisterFromHeartbeatTimer(_heartbeatId) {
+  var bFound = false;
+
+  for (var i = 0; (!bFound) && (i < heartbeatFunctions.length); i++)
+  {
+      var hbf = heartbeatFunctions[i];
+
+      if (hbf.id == _heartbeatId)
+      {
+        bFound = true;
+
+        heartbeatFunctions.splice(i, 1);
+      }
+  }
+
+  console.log("deregisterFromHeartbeatTimer - heartbeatFunctions[] active = " + heartbeatFunctions.length)
+
+  return bFound;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -149,7 +215,7 @@ function publishSessionInfoArray()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-function sendRecordedFiles(ws)
+function sendFileInfoArray(ws)
 {
   var message = { id: 'fileInfoArray', fileInfoArray: fileInfoArray };
 
@@ -157,7 +223,7 @@ function sendRecordedFiles(ws)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-function publishRecordedFiles()
+function publishFileInfoArray()
 {
   var message = { id: 'fileInfoArray', fileInfoArray: fileInfoArray };
 
@@ -165,11 +231,13 @@ function publishRecordedFiles()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-function scanForRecordedFiles(startingDirectory)
-{
+function scanFileInfoArray() {
+  
   fileInfoArray = []; //reset global
 
-  walkSync(startingDirectory, ['.webm', '.mp4', '.mp3'], fileInfoArray);
+  for (var i = 0; i < startingDirectories.length; i++) {
+    walkSync(startingDirectories[i], fileExtensions, fileInfoArray);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -363,7 +431,8 @@ web_socket_server.on('connection', function(ws) {
     recordParams     : null,
     ready            : false,
     presenterId      : null,
-    playerEndpoint   : null
+    playerEndpoint   : null,
+    heartbeatId      : -1
   }
   
   sessions[sessionId] = session;
@@ -371,7 +440,7 @@ web_socket_server.on('connection', function(ws) {
   publishSessionInfoArray();
   /////////////////////////////////////
 
-  sendRecordedFiles(ws);
+  sendFileInfoArray(ws);
   /////////////////////////////////////
 
   ws.on('error', function(error) {
@@ -441,6 +510,12 @@ web_socket_server.on('connection', function(ws) {
 
           publishSessionInfoArray(); // TODO incremental updates
           break;
+
+        case 'scanFileInfoArray':
+          scanFileInfoArray();
+
+          publishFileInfoArray();
+        break;
 
         case 'userMessage':
           broadcastMessage(message);
@@ -1065,10 +1140,17 @@ function startRecordingViewer(sessionId, ws, call_options, sdpOffer, callback) {
                   if (handleStandardPipelineError(session, error, callback)) { return; }
                 }); 
 
+                session.playerEndpoint.on('EndOfStream', (event) => { 
+                  console.log("session.playerEndpoint.on('End', (event)", event); 
+                
+                  deregisterFromHeartbeatTimer(session.heartbeatId);
+                  session.heartbeatId = -1;
+                });
+
                 session.playerEndpoint.play();
 
                 /////////////////////////////////
-                getVideoInfo(session.id);
+                session.heartbeatId = registerWithHeartbeatTimer(sendStreamInfo, undefined, [session.id]);
                 /////////////////////////////////
 
               }); //sessions[presenterId].webRtcEndpoint.connect(webRtcEndpoint, function(error)
@@ -1099,10 +1181,17 @@ function startRecordingViewer(sessionId, ws, call_options, sdpOffer, callback) {
                         if (handleStandardPipelineError(session, error, callback)) { return; }
                       });
 
+                      session.playerEndpoint.on('EndOfStream', (event) => { 
+                        console.log("session.playerEndpoint.on('End', (event)", event); 
+                      
+                        deregisterFromHeartbeatTimer(session.heartbeatId);
+                        session.heartbeatId = -1;
+                      });
+
                       session.playerEndpoint.play();
 
                       /////////////////////////////////
-                      getVideoInfo(session.id);
+                      session.heartbeatId = registerWithHeartbeatTimer(sendStreamInfo, undefined, [session.id]);
                       /////////////////////////////////
 
                     }); // sessions[presenterId].faceOverlayFilter.connect(webRtcEndpoint, function(error)
@@ -1127,6 +1216,7 @@ function SecondsToHHMMSS(totalSeconds) {
   var hours   = Math.floor(totalSeconds / 3600);
   var minutes = Math.floor((totalSeconds - (hours * 3600)) / 60);
   var seconds = totalSeconds - (hours * 3600) - (minutes * 60);
+      seconds = Math.floor(seconds);
 
   var result = (hours < 10 ? "0" + hours : hours);
       result += ":" + (minutes < 10 ? "0" + minutes : minutes);
@@ -1200,7 +1290,7 @@ function seekStream(sessionId, offset)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-function getVideoInfo(sessionId) 
+function sendStreamInfo(sessionId) 
 {
   /////////////////////////////////
   session = sessions[sessionId];
@@ -1210,40 +1300,17 @@ function getVideoInfo(sessionId)
     session.playerEndpoint.getVideoInfo(function(error, videoInfo) {
       if (error) { console.log('session.playerEndpoint.getVideoInfo()', error); }
       
-      console.log('session.playerEndpoint.getVideoInfo() videoInfo.duration     = ' + videoInfo.duration    );
-      console.log('session.playerEndpoint.getVideoInfo() videoInfo.isSeekable   = ' + videoInfo.isSeekable  );
-      console.log('session.playerEndpoint.getVideoInfo() videoInfo.seekableInit = ' + videoInfo.seekableInit);
-      console.log('session.playerEndpoint.getVideoInfo() videoInfo.seekableEnd  = ' + videoInfo.seekableEnd );
+      session.playerEndpoint.getPosition(function(error, position) {
+        if (error) { console.log('session.playerEndpoint.getPosition()', error); }
 
-      if (videoInfo.isSeekable)
-      {
-        console.log('session.playerEndpoint.currentTime = ' + session.playerEndpoint.currentTime);
-        console.log('session.playerEndpoint.position    = ' + session.playerEndpoint.position);
-        console.log('session.playerEndpoint.duration    = ' + session.playerEndpoint.duration);
+        // console.log('session.playerEndpoint.getPosition()                         = ' + position              );
+        // console.log('session.playerEndpoint.getVideoInfo() videoInfo.duration     = ' + videoInfo.duration    );
+        // console.log('session.playerEndpoint.getVideoInfo() videoInfo.isSeekable   = ' + videoInfo.isSeekable  );
+        // console.log('session.playerEndpoint.getVideoInfo() videoInfo.seekableInit = ' + videoInfo.seekableInit);
+        // console.log('session.playerEndpoint.getVideoInfo() videoInfo.seekableEnd  = ' + videoInfo.seekableEnd );
 
-      //   session.playerEndpoint.currentTime = 0;
-      //   session.playerEndpoint.position    = 0;
-      //   session.playerEndpoint.duration    = (videoInfo.seekableEnd - videoInfo.seekableInit);
-
-      //   var current_duration = (videoInfo.seekableEnd - videoInfo.seekableInit);
-      //   console.log('current_duration = ' + current_duration);
-        
-      //   var current_duration = (20 * 60 * 1000);
-      //       current_duration = (1840 * 1000);
-      //       current_duration = (60 * 1000);
-
-      //   var position1 = 0;
-
-      //   var position2 = session.playerEndpoint.position;
-
-      // //session.playerEndpoint.setPosition(current_duration);
-
-      //   console.log('player.setPosition(current_duration) = ' + current_duration);
-
-      //   console.log('session.playerEndpoint.currentTime = ' + session.playerEndpoint.currentTime);
-      //   console.log('session.playerEndpoint.position    = ' + session.playerEndpoint.position);
-      //   console.log('session.playerEndpoint.duration    = ' + session.playerEndpoint.duration);
-      }
+        sendMessage(session.ws, { id: 'streamInfo', position: position, duration: videoInfo.duration, isSeekable: videoInfo.isSeekable, seekableInit: videoInfo.seekableInit, seekableEnd: videoInfo.seekableEnd });
+      });
     });
   }
 }
@@ -1253,6 +1320,9 @@ function stopCall(sessionId) {
   if ((typeof sessions[sessionId] !== 'undefined') && (sessions[sessionId] !== null)) {
     var session       = sessions[sessionId];
     var teardownDelay = 100; //ms
+
+    deregisterFromHeartbeatTimer(session.heartbeatId);
+    session.heartbeatId = -1;
 
     // invalidate any presenter session so no one can connect to it
     if ((session.call_options != null) && (session.call_options.mode_selection == "presenter")) {
@@ -1286,6 +1356,7 @@ function stopCall(sessionId) {
     // cleanup the session
   //session.ws               = ws;
   //session.id               = sessionId;
+  //session.logged_in_user   = null;
     session.call_options     = null;
     session.pipeline_owner   = null;
     session.pipeline         = null;
@@ -1295,6 +1366,8 @@ function stopCall(sessionId) {
     session.ready            = false;
     session.presenterId      = null;
     session.playerEndpoint   = null;
+    session.heartbeatId      = -1;
+
   }
 }
 
@@ -1308,6 +1381,13 @@ function teardownPipeline(session) {
 
     session.recorderEndpoint.release();
     session.recorderEndpoint = null;
+  }
+
+  if (session.playerEndpoint != null) {
+    session.playerEndpoint.stop();
+
+    session.playerEndpoint.release();
+    session.playerEndpoint = null;
   }
 
   if (session.webRtcEndpoint != null) {
