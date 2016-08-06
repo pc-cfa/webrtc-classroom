@@ -98,6 +98,74 @@ var server = https.createServer(options, app).listen(port, function() {
 app.use(express.static(path.join(__dirname, 'static')));
 
 ///////////////////////////////////////////////////////////////////////////////
+app.get('/video/:filename', function (req, res, next) {
+ 
+  console.log("got a request for video file ", req.url);
+
+//if (req.url === '/movie.mp4') {
+  if (true) {
+////var file      = path.resolve(__dirname,'Videos/Silicon.Valley/Silicon.Valley.S03E01.HDTV.x264-KILLERS[eztv].mkv');
+ //   var file      = '/home/peter/Videos/Silicon.Valley/Silicon.Valley.S03E01.HDTV.x264-KILLERS[eztv].mkv';
+  //var file      = '/home/peter/Videos/Silicon.Valley/SV.S03E02.mp4';
+    var file      = '/home/peter/Videos/Presentation_peter_screen_20160801_231157.webm';
+//  var file      = '/home/peter/Videos/small.mov';
+  //var file      = '/home/peter/Videos/Presentation_pedro_webcam_20160802_000024.webm';
+
+
+
+
+    fs.stat(file, (err, stats) => {
+      if (err) {
+        if (err.code === 'ENOENT') { return res.sendStatus(404); } // 404 file not found
+        
+        return res.end(err);
+      }
+
+      var range     = req.headers.range;
+
+      if (!range) { return res.sendStatus(416); } // 416 Wrong range
+      
+      var positions = range.replace(/bytes=/, '').split('-');
+      var start     = parseInt(positions[0], 10);
+
+      var total     = stats.size;
+      var end       = positions[1] ? parseInt(positions[1], 10) : total - 1;
+      var chunkSize = (end - start) + 1;
+
+      res.writeHead(206, {
+        'Content-Range' : 'bytes ' + start + '-' + end + '/' + total,
+        'Accept-Ranges' : 'bytes',
+        'Content-Length': chunkSize,
+        'Content-Type'  : 'video/webm'
+      //'Content-Type'  : 'video/mkv'
+      //'Content-Type'  : 'video/mp4'
+      });
+
+      var stream = fs.createReadStream(file, { start: start, end: end })
+        .on('open', () => { stream.pipe(res); })
+        .on('error', (err) => { res.end(err); });
+
+      res.on('close', () => {
+        // close or destroy stream
+        stream = null; 
+      });
+
+    }); //fs.stat(file, (err, stats)
+  } // if (req.url === '/movie.mp4')
+
+});
+
+///////////////////////////////////////////////////////////////////////////////
+function processFileUpload(message) {
+
+  var filepath = '/home/peter/Pictures/' + 'snapshot.png'; 
+
+  fs.writeFile(filepath, message.file_data, 'base64', function(err) {
+    console.log(err);
+  });  
+}
+
+///////////////////////////////////////////////////////////////////////////////
 var web_socket_server = new ws.Server({
   server: server,
   path: '/classroom'
@@ -466,12 +534,17 @@ web_socket_server.on('connection', function(ws) {
     try {
       var message = JSON.parse(_message);
       
-      if (message.id !== 'onIceCandidate') {
-        console.log('Connection ' + sessionId + ' received message ', message);
+      if (message.id == 'onIceCandidate') {
+        if (bLogIceCandidateMessages) { console.log('Connection ' + sessionId + ' received message onIceCandidate...'); }
       } 
-      else {
-        if (bLogIceCandidateMessages) { console.log('TL;DR: onIceCandidate'); }
+      else if (message.id == 'fileUpload') {
+        console.log('Connection ' + sessionId + ' received message fileUpload...');
+        console.log("message.file_data.length = " + message.file_data.length);
       }
+      else {
+        console.log('Connection ' + sessionId + ' received message ', message);
+      }
+
 
       switch (message.id) 
       {
@@ -520,6 +593,13 @@ web_socket_server.on('connection', function(ws) {
         case 'userMessage':
           broadcastMessage(message);
           break;
+
+        case 'fileUpload':
+          processFileUpload(message);
+
+          // TODO broadcast availability of file
+          break;
+
 
         case 'onIceCandidate':
           onIceCandidate(sessionId, message.candidate);

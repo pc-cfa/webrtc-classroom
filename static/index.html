@@ -75,7 +75,7 @@
                 <span class="glyphicon glyphicon-option-vertical"></span><span id="collapse-call-section-icon" class="glyphicon glyphicon-phone-alt"></span></a>
             </h6><!--panel-title-->
           </div><!--panel-heading-->
-          <div id="collapse-call-section" class="panel-collapse collapse in">
+          <div id="collapse-call-section" class="panel-collapse collapse">
             <div class="panel-body">
               <div class="logged_in_user" style="margin: 2px; padding-left: 16px; border-style: solid; border-width: 1px;  border-radius: 5px; border-color: black;">
                 <div class="row">
@@ -179,8 +179,8 @@
 
 
               <div class="row"  style="padding-left: 16px;"><!--BEGIN CALL CONTROLS-->
-                <label class="col-sm-1 control-label">CALL</label>
-                <div class="col-sm-10">
+                <label class="col-sm-3 control-label">CALL</label>
+                <div class="col-sm-8">
                   <a id="call" href="#" class="btn btn-success" onclick="startCall(); return false;">
                     <span class="glyphicon glyphicon-play"></span> Start</a>
 
@@ -211,40 +211,44 @@
                 <span class="glyphicon glyphicon-option-vertical"></span><span class="glyphicon glyphicon-blackboard"></span></a>
             </h6><!--panel-title-->
           </div><!--panel-heading-->
-          <div id="collapse-video-section" class="panel-collapse collapse in">
+          <div id="collapse-video-section" class="panel-collapse collapse">
             <form class="panel-body form-horizontal" role="form">
 
               <div class="col-sm-11" style="margin: 2px; border-style: solid; border-width: 1px;  border-radius: 5px; border-color: black;">
-                <div class="row"><!--BEGIN VIDEO PLAYER SIZE CONTROLS-->
-                  <div id="video_player_size_controls">
-                    <a id="extra_extra_small_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(240, 180); return false;" style="padding-left: 4px; padding-right: 0px;">
+                <div class="row"><!--BEGIN VIDEO PLAYER1 SIZE CONTROLS-->
+                  <div id="video_player_1_size_controls">
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(1, 240, 180); return false;" style="padding-left: 4px; padding-right: 0px;">
                       <span class="glyphicon glyphicon-picture"></span> XXS</a>
 
-                    <a id="extra_small_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(320, 240); return false;" style="padding-left: 4px; padding-right: 0px;">
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(1, 320, 240); return false;" style="padding-left: 4px; padding-right: 0px;">
                       <span class="glyphicon glyphicon-picture"></span> XS</a>
 
-                    <a id="small_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(480, 320); return false;" style="padding-left: 4px; padding-right: 0px;">
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(1, 480, 320); return false;" style="padding-left: 4px; padding-right: 0px;">
                       <span class="glyphicon glyphicon-picture"></span> S</a>
 
-                    <a id="medium_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(640, 480); return false;" style="padding-left: 4px; padding-right: 0px;">
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(1, 640, 480); return false;" style="padding-left: 4px; padding-right: 0px;">
                       <span class="glyphicon glyphicon-picture"></span> M</a>
 
-                    <a id="large_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(1024, 768); return false;" style="padding-left: 4px; padding-right: 0px;">
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(1, 1024, 768); return false;" style="padding-left: 4px; padding-right: 0px;">
                       <span class="glyphicon glyphicon-picture"></span> L</a>
 
-                    <a id="hd_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(1280, 1024); return false;" style="padding-left: 4px; padding-right: 0px;">
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(1, 1280, 1024); return false;" style="padding-left: 4px; padding-right: 0px;">
                       <span class="glyphicon glyphicon-picture"></span> HD</a>
 
-                    <a id="fhd_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(1920, 1080); return false;" style="padding-left: 4px; padding-right: 0px;">
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(1, 1920, 1080); return false;" style="padding-left: 4px; padding-right: 0px;">
                       <span class="glyphicon glyphicon-picture"></span> FHD</a>
 
-                    <a id="qhd_video_player_size" href="#" class="btn" onclick="setVideoPlayerSize(3840, 2160); return false;" style="padding-left: 4px; padding-right: 4px">
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(1, 3840, 2160); return false;" style="padding-left: 4px; padding-right: 4px">
                       <span class="glyphicon glyphicon-picture"></span> QHD</a>
+                    <a href="#" class="btn btn-info" onclick="snapshotVideo(); return false;">
+                      <span class="glyphicon glyphicon-camera"></span> Snapshot</a>
                   </div>
-                </div><!--row--><!--END VIDEO PLAYER SIZE CONTROLS-->
+                </div><!--row--><!--END VIDEO PLAYER1 SIZE CONTROLS-->
 
                 <div class="row"><!--BEGIN VIDEO PLAYER-->
+              <!--<video id="video_player_1" autoplay controls width="640px" height="480px" poster="img/webrtc.png" style="border-style: none;"></video>-->
                   <video id="video_player_1" autoplay controls width="640px" height="480px" poster="img/webrtc.png" style="border-style: none;"></video>
+                  <canvas id="video_player_1_canvas" style="display:none;"></canvas>
                 </div><!--row--><!--END VIDEO PLAYER-->
 
                 <div class="row"><!--BEGIN SEEK CONTROLS-->
@@ -287,6 +291,79 @@
         </div><!--panel panel-default-->
       </div><!--panel-group-->
     </div><!--row--><!--END VIDEO SECTION-->
+
+
+    <div class="row"><!--BEGIN HTTP VIDEO FILE SECTION-->
+      <div class="panel-group" style="margin: 2px; border-style: solid; border-width: 1px;  border-radius: 5px; border-color: black;">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h6 class="panel-title">
+              <a data-toggle="collapse" href="#collapse-video-replay-section">
+                <span class="glyphicon glyphicon-option-vertical"></span><span class="glyphicon glyphicon-film"></span></a>
+            </h6><!--panel-title-->
+          </div><!--panel-heading-->
+          <div id="collapse-video-replay-section" class="panel-collapse collapse in">
+            <form class="panel-body form-horizontal" role="form">
+
+              <div class="col-sm-11" style="margin: 2px; border-style: solid; border-width: 1px;  border-radius: 5px; border-color: black;">
+
+                <div class="row"><!--BEGIN VIDEO PLAYER2 REPLAY CONTROLS-->
+                  <div id="video_player2_replay_controls">
+                    <select id="replay_file_selection" name="replay_file_selection" style="width: 240px">
+                      <option value=""> select a file</option> 
+                    </select>
+                    <a id="refresh_replay_file_list" href="#" class="btn btn-primary" onclick="scanFileInfoArray(); return false;">
+                      <span class="glyphicon glyphicon-refresh"></span> Refresh List</a>
+                    <a id="start_replay" href="#" class="btn btn-success" onclick="startReplay(); return false;">
+                      <span class="glyphicon glyphicon-play"></span> Start</a>
+                    <a id="stop_replay" href="#" class="btn btn-info" onclick="stopReplay(); return false;">
+                      <span class="glyphicon glyphicon-stop"></span> Stop</a>
+
+                  </div>
+                </div><!--row--><!--END VIDEO PLAYER2 REPLAY CONTROLS-->
+
+                <div class="row"><!--BEGIN VIDEO PLAYER2 SIZE CONTROLS-->
+                  <div id="video_player2_size_controls">
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(2, 240, 180); return false;" style="padding-left: 4px; padding-right: 0px;">
+                      <span class="glyphicon glyphicon-picture"></span> XXS</a>
+
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(2, 320, 240); return false;" style="padding-left: 4px; padding-right: 0px;">
+                      <span class="glyphicon glyphicon-picture"></span> XS</a>
+
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(2, 480, 320); return false;" style="padding-left: 4px; padding-right: 0px;">
+                      <span class="glyphicon glyphicon-picture"></span> S</a>
+
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(2, 640, 480); return false;" style="padding-left: 4px; padding-right: 0px;">
+                      <span class="glyphicon glyphicon-picture"></span> M</a>
+
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(2, 1024, 768); return false;" style="padding-left: 4px; padding-right: 0px;">
+                      <span class="glyphicon glyphicon-picture"></span> L</a>
+
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(2, 1280, 1024); return false;" style="padding-left: 4px; padding-right: 0px;">
+                      <span class="glyphicon glyphicon-picture"></span> HD</a>
+
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(2, 1920, 1080); return false;" style="padding-left: 4px; padding-right: 0px;">
+                      <span class="glyphicon glyphicon-picture"></span> FHD</a>
+
+                    <a href="#" class="btn" onclick="setVideoPlayerSize(2, 3840, 2160); return false;" style="padding-left: 4px; padding-right: 4px">
+                      <span class="glyphicon glyphicon-picture"></span> QHD</a>
+
+                  </div>
+                </div><!--row--><!--END VIDEO PLAYER2 SIZE CONTROLS-->
+
+                <div class="row"><!--BEGIN VIDEO PLAYER-->
+                  <video id="video_player_2" controls width="640px" height="480px" poster="" onerror="onReplayError(event)" style="border-style: none; background: black">
+               <!--<source id="video_player_2_source" src="" type=""></source>-->
+                  </video>
+                </div><!--row--><!--END VIDEO PLAYER-->
+
+              </div><!--col-sm-11-->
+
+            </form><!--class="form-horizontal" role="form">-->
+          </div><!--collapse-video-section-->
+        </div><!--panel panel-default-->
+      </div><!--panel-group-->
+    </div><!--row--><!--END HTTP VIDEO FILE SECTION-->
 
 
     <div class="row"><!--BEGIN PARTICIPANTS SECTION-->
