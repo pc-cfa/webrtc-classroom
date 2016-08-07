@@ -638,28 +638,37 @@ function setVideoPlayerSize(player_id, width, height)
 
 ///////////////////////////////////////////////////////////////////////////////
 function snapshotVideo() {
-		var video   = $('#video_player_1')[0]; 
-		var canvas  = $('#video_player_1_canvas')[0]; 
-		var context = canvas.getContext('2d');
+		var video               = $('#video_player_1')[0]; 
+		var snapshot_canvas     = $('#snapshot_canvas')[0]; 
+		var thumbnail_canvas    = $('#thumbnail_canvas')[0]; 
+		var snapshot_context    = snapshot_canvas.getContext('2d');
+		var thumbnail_context   = thumbnail_canvas.getContext('2d');
   
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
+    snapshot_canvas.width   = video.videoWidth;
+    snapshot_canvas.height  = video.videoHeight;
 
-	  // Define the size of the rectangle that will be filled (basically the entire element)
- //  context.fillRect(0, 0, canvas.width, canvas.height);
+    var thumbnail_scaling   = video.videoHeight / 64;
+
+    thumbnail_canvas.width  = video.videoWidth  / thumbnail_scaling;
+    thumbnail_canvas.height = video.videoHeight / thumbnail_scaling;
+
     // Grab the image from the video
- 
     document.body.style.cursor = 'wait';
 
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);    	
+    snapshot_context.drawImage(video, 0, 0, snapshot_canvas.width, snapshot_canvas.height);    	
+
+    thumbnail_context.drawImage(snapshot_canvas, 0, 0, thumbnail_canvas.width, thumbnail_canvas.height);    	
 
     //convert to desired file format
-    var dataURI   = canvas.toDataURL('image/png'); // can also use 'image/jpeg'    	
-    var imagedata = dataURI.substr(dataURI.indexOf(',') + 1); 
+    var snapshot_dataURI  = snapshot_canvas.toDataURL('image/png'); // can also use 'image/jpeg'    	
+    var thumbnail_dataURI = thumbnail_canvas.toDataURL('image/png'); // can also use 'image/jpeg'    	
+    var snapshot_data     = snapshot_dataURI.substr(snapshot_dataURI.indexOf(',') + 1); 
+    var thumbnail_data    = thumbnail_dataURI.substr(thumbnail_dataURI.indexOf(',') + 1); 
 
-    console.log("imagedata.length = " + imagedata.length);
+    console.log("snapshot_data.length  = " + snapshot_data.length);
+    console.log("thumbnail_data.length = " + thumbnail_data.length);
 
-    var message = { id: 'fileUpload', to: '', from: logged_in_user, caption: 'Presentation Snapshot', file_format: 'png', file_data: imagedata };
+    var message = { id: 'fileUpload', to: '', from: logged_in_user, caption: 'Presentation Snapshot', file_format: 'png', thumbnail_data: thumbnail_data, file_data: snapshot_data };
     
     sendMessage(message);
 

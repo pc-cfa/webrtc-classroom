@@ -158,10 +158,41 @@ app.get('/video/:filename', function (req, res, next) {
 ///////////////////////////////////////////////////////////////////////////////
 function processFileUpload(message) {
 
-  var filepath = '/home/peter/Pictures/' + 'snapshot.png'; 
+  var date      = new Date();
+  var timeRegex = /^.*T(\d{2}):(\d{2}):(\d{2}).*$/
+  var dateRegex = /^(\d{4})-(\d{2})-(\d{2})T.*$/
+  var dateData  = dateRegex.exec(date.toJSON());
+  var timeData  = timeRegex.exec(date.toJSON());
+  var today     = dateData[1] + dateData[2] + dateData[3];
+  var now       = timeData[1] + timeData[2] + timeData[3];
 
-  fs.writeFile(filepath, message.file_data, 'base64', function(err) {
-    console.log(err);
+  var filepath = '/home/peter/Pictures/' + 'snapshot' + '_' + today + '_' + now + '.' + 'png'; 
+
+  fs.writeFile(filepath, message.file_data, 'base64', function(error) {
+    if (error) { 
+      console.log(error); 
+      // TODO advise of failure
+      return;
+    }
+
+    if (message.thumbnail_data != null) {
+      var thumbnailpath = '/home/peter/Pictures/' + 'snapshot' + '_' + today + '_' + now + '_thumbnail' + '.' + 'png'; 
+
+      fs.writeFile(thumbnailpath, message.thumbnail_data, 'base64', function(err) {
+        if (error) { 
+          console.log(error);
+          // TODO cleanup
+          // TODO advise of failure
+          return;
+        }
+
+        // TODO advise availability of thumbnail file
+        // TODO advise availability of main file
+      });      
+    }
+    else {
+      // TODO advise availability of main file only
+    }
   });  
 }
 
